@@ -18,20 +18,10 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "RF24Network_config.h"
+#include "nrf24/nrf24.hpp"
+#include "mcu_config.hpp"
 
-#if (defined (__linux) || defined (linux)) && !defined (__ARDUINO_X86__)
-  #include <stdint.h>
-  #include <stdio.h>
-  #include <time.h>
-  #include <string.h>
-  #include <sys/time.h>
-  #include <stddef.h>
-  #include <assert.h>
-  #include <map>
-  #include <utility>      // std::pair
-  #include <queue>
-  
-#endif
+using radio = Nrf24<spi, sys, uart, nrf_csn,nrf_ce,nrf_irq,0,Nrf24AddressWidth::WIDTH_5,76, Nrf24Speed::RF_SPEED_250KBPS >;
 
 
 /**
@@ -183,7 +173,7 @@
  
  #define FLAG_NO_POLL 8
 
-class RF24;
+//class RF24;
 
 /**
  * Header which is sent with each message
@@ -280,11 +270,7 @@ struct RF24NetworkHeader
   * On Arduino, the message buffer is just a pointer, and can be pointed to any memory location.
   * On Linux the message buffer is a standard byte array, equal in size to the defined MAX_PAYLOAD_SIZE
   */
-  #if defined (RF24_LINUX)
-    uint8_t message_buffer[MAX_PAYLOAD_SIZE]; //< Array to store the message
-  #else    
     uint8_t *message_buffer; //< Pointer to the buffer storing the actual message 
-  #endif
   /**
    * Default constructor
    *
@@ -367,35 +353,7 @@ public:
    *
    */
 
-  RF24Network( RF24& _radio );
-
-  /**
-   * Bring up the network using the current radio frequency/channel.
-   * Calling begin brings up the network, and configures the address, which designates the location of the node within RF24Network topology.
-   * @note Node addresses are specified in Octal format, see <a href=Addressing.html>RF24Network Addressing</a> for more information.
-   * @warning Be sure to 'begin' the radio first.
-   *
-   * **Example 1:** Begin on current radio channel with address 0 (master node)
-   * @code
-   * network.begin(00);
-   * @endcode
-   * **Example 2:** Begin with address 01 (child of master)
-   * @code
-   * network.begin(01);
-   * @endcode
-   * **Example 3:** Begin with address 011 (child of 01, grandchild of master)
-   * @code
-   * network.begin(011);
-   * @endcode   
-   *
-   * @see begin(uint8_t _channel, uint16_t _node_address )
-   * @param _node_address The logical address of this node
-   *
-   */
-   
-  inline void begin(uint16_t _node_address){
-	  begin(USE_CURRENT_CHANNEL,_node_address);
-  }
+  //RF24Network(  );
 
   /**
    * Main layer loop
@@ -407,14 +365,14 @@ public:
    * 
    * @return Returns the type of the last received payload.
    */
-  uint8_t update(void);
+  static uint8_t update(void);
 
   /**
    * Test whether there is a message available for this node
    *
    * @return Whether there is a message available for this node
    */
-  bool available(void);
+  static bool available(void);
 
   /**
    * Read the next available header
@@ -426,7 +384,7 @@ public:
    *
    * @param[out] header The header (envelope) of the next message
    */
-  uint16_t peek(RF24NetworkHeader& header);
+  static uint16_t peek(RF24NetworkHeader& header);
 
   /**
    * Read a message
@@ -448,7 +406,7 @@ public:
    * @param maxlen The largest message size which can be held in @p message
    * @return The total number of bytes copied into @p message
    */
-  uint16_t read(RF24NetworkHeader& header, void* message, uint16_t maxlen);
+  static uint16_t read(RF24NetworkHeader& header, void* message, uint16_t maxlen);
 
   /**
    * Send a message
@@ -459,7 +417,7 @@ public:
    * @code
    * uint32_t time = millis();
    * uint16_t to = 00; // Send to master
-   * RF24NetworkHeader header(to, 'T'); // Send header type 'T'
+   * RF24NetworkHeader header(to, 'T'); RF24Network::// Send header type 'T'
    * network.write(header,&time,sizeof(time));
    * @endcode
    * @param[in,out] header The header (envelope) of this message.  The critical
@@ -469,7 +427,7 @@ public:
    * @param len The size of the message
    * @return Whether the message was successfully received
    */
-  bool write(RF24NetworkHeader& header,const void* message, uint16_t len);
+  static bool write(RF24NetworkHeader& header,const void* message, uint16_t len);
 
   /**@}*/
   /**
@@ -478,21 +436,7 @@ public:
    *  For advanced configuration of the network
    */
   /**@{*/
-  
 
-   /**
-   * Construct the network in dual head mode using two radio modules.
-   * @note Not working on RPi. Radios will share MISO, MOSI and SCK pins, but require separate CE,CS pins.
-   * @code
-   * 	RF24 radio(7,8);
-   * 	RF24 radio1(4,5);
-   * 	RF24Network(radio.radio1);
-   * @endcode
-   * @param _radio The underlying radio driver instance
-   * @param _radio1 The second underlying radio driver instance
-   */
-   
-  RF24Network( RF24& _radio, RF24& _radio1); 
   
 	/**
 	* By default, multicast addresses are divided into levels. 
@@ -508,7 +452,7 @@ public:
 	* master node (00) at multicast Level 0
 	*/
 	
-	void multicastLevel(uint8_t level);
+	static void multicastLevel(uint8_t level);
 
 	/**
 	* Enabling this will allow this node to automatically forward received multicast frames to the next highest
@@ -517,7 +461,7 @@ public:
 	* @see multicastLevel
 	*/
 	
-	bool multicastRelay;
+	static bool multicastRelay;
 
  /**
    * Set up the watchdog timer for sleep mode using the number 0 through 10 to represent the following time periods:<br>
@@ -527,7 +471,7 @@ public:
    * @endcode
    * @param prescalar The WDT prescaler to define how often the node will wake up. When defining sleep mode cycles, this time period is 1 cycle.
    */
- void setup_watchdog(uint8_t prescalar);
+ //void setup_watchdog(uint8_t prescalar);
 
     /**
    * @note: This value is automatically assigned based on the node address
@@ -539,7 +483,7 @@ public:
    *
    */
 
-  uint32_t txTimeout; /**< Network timeout value */
+  static const uint8_t txTimeout = 25; /**< Network timeout value */
   
   /**
    * This only affects payloads that are routed by one or more nodes.
@@ -548,7 +492,7 @@ public:
    * utilize this value.
    */
   
-   uint16_t routeTimeout; /**< Timeout for routed payloads */  
+  static const uint16_t routeTimeout = 75; /**< Timeout for routed payloads */
   
  
   /**@}*/
@@ -569,7 +513,7 @@ public:
    * @endcode  
    *
    */
-  void failures(uint32_t *_fails, uint32_t *_ok);
+  static void failures(uint32_t *_fails, uint32_t *_ok);
   
    #if defined (RF24NetworkMulticast)
   
@@ -587,7 +531,7 @@ public:
    * @return Whether the message was successfully sent
    */
    
-   bool multicast(RF24NetworkHeader& header,const void* message, uint16_t len, uint8_t level);
+   static bool multicast(RF24NetworkHeader& header,const void* message, uint16_t len, uint8_t level);
    
 	
    #endif
@@ -597,7 +541,7 @@ public:
    * The same as write, but a physical address is specified as the last option.
    * The payload will be written to the physical address, and routed as necessary by the recipient
    */
-   bool write(RF24NetworkHeader& header,const void* message, uint16_t len, uint16_t writeDirect);
+   static bool write(RF24NetworkHeader& header,const void* message, uint16_t len, uint16_t writeDirect);
 
    /**
    * Sleep this node - For AVR devices only
@@ -622,7 +566,7 @@ public:
    * @param interruptPin: The interrupt number to use (0,1) for pins two and three on Uno,Nano. More available on Mega etc.
    * @return True if sleepNode completed normally, after the specified number of cycles. False if sleep was interrupted
    */
- bool sleepNode( unsigned int cycles, int interruptPin );
+ static bool sleepNode( unsigned int cycles, int interruptPin );
 
 
   /**
@@ -630,18 +574,18 @@ public:
    *
    * @return This node's parent address, or -1 if this is the base
    */
-  uint16_t parent() const;
+  static uint16_t parent();
   
    /**
    * Provided a node address and a pipe number, will return the RF24Network address of that child pipe for that node
    */
-   uint16_t addressOfPipe( uint16_t node,uint8_t pipeNo );
+   static uint16_t addressOfPipe( uint16_t node,uint8_t pipeNo );
    
    /**
     * @note Addresses are specified in octal: 011, 034
     * @return True if a supplied address is valid
 	*/
-   bool is_valid_address( uint16_t node );
+   static bool is_valid_address( uint16_t node );
 
  /**@}*/
   /**
@@ -672,7 +616,7 @@ public:
    * @param _node_address The logical address of this node
    *
    */
-  void begin(uint8_t _channel, uint16_t _node_address );  
+  static void begin(uint16_t _node_address );
   
   /**@}*/
   /**
@@ -684,7 +628,7 @@ public:
   
   /** The raw system frame buffer of received data. */
   
-  uint8_t frame_buffer[MAX_FRAME_SIZE];   
+  static uint8_t frame_buffer[32];
 
   /** 
    * **Linux** <br>
@@ -701,9 +645,6 @@ public:
    * }
    * @endcode
    */
-  #if defined (RF24_LINUX)
-    std::queue<RF24NetworkFrame> external_queue;
-  #endif
   
   #if !defined ( DISABLE_FRAGMENTATION ) &&  !defined (RF24_LINUX)
   /**
@@ -724,7 +665,7 @@ public:
  * @endcode  
   * Linux devices (defined as RF24_LINUX) currently cache all payload types, and do not utilize frag_ptr. 
   */
-  RF24NetworkFrame* frag_ptr;
+  static RF24NetworkFrame* frag_ptr;
   #endif
 
   /**
@@ -744,7 +685,7 @@ public:
   * | NETWORK_REQ_ADDRESS   |  
   *
   */  
-  bool returnSysMsgs;
+  static bool returnSysMsgs;
 
   /**
   * Network Flags allow control of data flow
@@ -760,23 +701,23 @@ public:
   * |FLAG_NO_POLL| 8(bit_4) | EXTERNAL/USER: Disables NETWORK_POLL responses on a node-by-node basis. |  
   * 
   */
-  uint8_t networkFlags;
+  static uint8_t networkFlags;
     
   private:
 
-  uint32_t txTime;
+  static uint32_t txTime;
 
-  bool write(uint16_t, uint8_t directTo);
-  bool write_to_pipe( uint16_t node, uint8_t pipe, bool multicast );
-  uint8_t enqueue(RF24NetworkHeader *header);
+  static bool write(uint16_t, uint8_t directTo);
+  static bool write_to_pipe( uint16_t node, uint8_t pipe, bool multicast );
+  static uint8_t enqueue(RF24NetworkHeader *header);
 
-  bool is_direct_child( uint16_t node );
-  bool is_descendant( uint16_t node );
+  static bool is_direct_child( uint16_t node );
+  static bool is_descendant( uint16_t node );
   
-  uint16_t direct_child_route_to( uint16_t node );
+  static uint16_t direct_child_route_to( uint16_t node );
   //uint8_t pipe_to_descendant( uint16_t node );
-  void setup_address(void);
-  bool _write(RF24NetworkHeader& header,const void* message, uint16_t len, uint16_t writeDirect);
+  static void setup_address(void);
+  static bool _write(RF24NetworkHeader& header,const void* message, uint16_t len, uint16_t writeDirect);
     
   struct logicalToPhysicalStruct{
 	uint16_t send_node; 
@@ -784,57 +725,39 @@ public:
 	bool multicast;
   };
   
-  bool logicalToPhysicalAddress(logicalToPhysicalStruct *conversionInfo);
+  static bool logicalToPhysicalAddress(logicalToPhysicalStruct *conversionInfo);
   
-  
-  RF24& radio; /**< Underlying radio driver, provides link/physical layers */
-#if defined (DUAL_HEAD_RADIO)
-  RF24& radio1;
-#endif
+
 #if defined (RF24NetworkMulticast)  
-  uint8_t multicast_level;  
+  static uint8_t multicast_level;
 #endif
-  uint16_t node_address; /**< Logical node address of this unit, 1 .. UINT_MAX */
+  static uint16_t node_address; /**< Logical node address of this unit, 1 .. UINT_MAX */
   //const static int frame_size = 32; /**< How large is each frame over the air */
-  uint8_t frame_size;
+  static uint8_t frame_size;
   const static unsigned int max_frame_payload_size = MAX_FRAME_SIZE-sizeof(RF24NetworkHeader);
 
-  #if defined (RF24_LINUX)
-    std::queue<RF24NetworkFrame> frame_queue;
-	std::map< uint16_t, RF24NetworkFrame> frameFragmentsCache;
-    bool appendFragmentToFrame(RF24NetworkFrame frame);
-  
-  #else
-    #if  defined(__AVR_ATtiny25__) || defined(__AVR_ATtiny45__) || defined(__AVR_ATtiny85__) || defined(__AVR_ATtiny24__) || defined(__AVR_ATtiny44__) || defined(__AVR_ATtiny84__)
-	  #if !defined (NUM_USER_PAYLOADS)
-		#define NUM_USER_PAYLOADS 3
-	  #endif
-    #endif
-	#if !defined (NUM_USER_PAYLOADS)
-	  #define NUM_USER_PAYLOADS 5
-	#endif
 	  
 	#if defined (DISABLE_USER_PAYLOADS)
     uint8_t frame_queue[1]; /**< Space for a small set of frames that need to be delivered to the app layer */
 	#else
-	uint8_t frame_queue[MAIN_BUFFER_SIZE]; /**< Space for a small set of frames that need to be delivered to the app layer */
+	static uint8_t frame_queue[MAIN_BUFFER_SIZE]; /**< Space for a small set of frames that need to be delivered to the app layer */
 	#endif
 	
-	uint8_t* next_frame; /**< Pointer into the @p frame_queue where we should place the next received frame */
+	static uint8_t* next_frame; /**< Pointer into the @p frame_queue where we should place the next received frame */
 	
 	#if !defined ( DISABLE_FRAGMENTATION )
       RF24NetworkFrame frag_queue;
       uint8_t frag_queue_message_buffer[MAX_PAYLOAD_SIZE]; //frame size + 1 
     #endif
   
-  #endif
+  //#endif
   
   //uint8_t frag_queue[MAX_PAYLOAD_SIZE + 11];
   //RF24NetworkFrame frag_queue;
   
-  uint16_t parent_node; /**< Our parent's node address */
-  uint8_t parent_pipe; /**< The pipe our parent uses to listen to us */
-  uint16_t node_mask; /**< The bits which contain signfificant node address information */
+  static uint16_t parent_node; /**< Our parent's node address */
+  static uint8_t parent_pipe; /**< The pipe our parent uses to listen to us */
+  static uint16_t node_mask; /**< The bits which contain signfificant node address information */
   
   #if defined ENABLE_NETWORK_STATS
   static uint32_t nFails;
