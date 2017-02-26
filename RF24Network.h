@@ -384,7 +384,7 @@ public:
    *
    * @param[out] header The header (envelope) of the next message
    */
-  static uint16_t peek(RF24NetworkHeader& header);
+  static uint16_t peek(RF24NetworkHeader* header);
 
   /**
    * Read a message
@@ -406,7 +406,7 @@ public:
    * @param maxlen The largest message size which can be held in @p message
    * @return The total number of bytes copied into @p message
    */
-  static uint16_t read(RF24NetworkHeader& header, void* message, uint16_t maxlen);
+  static uint16_t read(RF24NetworkHeader* header, void* message, uint16_t maxlen);
 
   /**
    * Send a message
@@ -461,7 +461,7 @@ public:
 	* @see multicastLevel
 	*/
 	
-	static bool multicastRelay;
+	constexpr static bool multicastRelay = false;
 
  /**
    * Set up the watchdog timer for sleep mode using the number 0 through 10 to represent the following time periods:<br>
@@ -628,7 +628,7 @@ public:
   
   /** The raw system frame buffer of received data. */
   
-  static uint8_t frame_buffer[32];
+  static uint8_t frame_buffer[64];
 
   /** 
    * **Linux** <br>
@@ -685,7 +685,7 @@ public:
   * | NETWORK_REQ_ADDRESS   |  
   *
   */  
-  static bool returnSysMsgs;
+  constexpr static bool returnSysMsgs=true;//@ this is set to true when using RF24mesh if not using mesh set to false
 
   /**
   * Network Flags allow control of data flow
@@ -705,11 +705,11 @@ public:
     
   private:
 
-  static uint32_t txTime;
+  constexpr static uint32_t txTime=0;
 
-  static bool write(uint16_t, uint8_t directTo);
-  static bool write_to_pipe( uint16_t node, uint8_t pipe, bool multicast );
-  static uint8_t enqueue(RF24NetworkHeader *header);
+  static bool write(uint16_t, uint8_t directTo, uint8_t frame_size);
+  static bool write_to_pipe( uint16_t node, uint8_t pipe, bool multicast , uint8_t frame_size);
+  static uint8_t enqueue(RF24NetworkHeader *header,uint8_t frame_size);
 
   static bool is_direct_child( uint16_t node );
   static bool is_descendant( uint16_t node );
@@ -733,7 +733,7 @@ public:
 #endif
   static uint16_t node_address; /**< Logical node address of this unit, 1 .. UINT_MAX */
   //const static int frame_size = 32; /**< How large is each frame over the air */
-  static uint8_t frame_size;
+  //static uint8_t frame_size;
   const static unsigned int max_frame_payload_size = MAX_FRAME_SIZE-sizeof(RF24NetworkHeader);
 
 	  
